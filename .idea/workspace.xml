@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="da39451a-cf05-4778-841e-69c634710766" name="Default Changelist" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go Application" />
+        <option value="Go File" />
+      </list>
+    </option>
+  </component>
+  <component name="GOROOT" path="C:\Users\ZY\go\go1.13.4" />
+  <component name="ProjectId" id="1Uy0CA4Kv5VcC7uqoUlPF1jTQ7R" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="DefaultGoTemplateProperty" value="Go File" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="go.import.settings.migrated" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../awesomeProject" />
+    <property name="settings.editor.selected.configurable" value="settings.github" />
+  </component>
+  <component name="RunManager" selected="Go Build.go build main.go">
+    <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="pagepool" />
+      <working_directory value="$PROJECT_DIR$/" />
+      <go_parameters value="-i" />
+      <kind value="FILE" />
+      <filePath value="$PROJECT_DIR$/../awesomeProject/main.go" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go build main.go" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
+      <module name="pagepool" />
+      <working_directory value="$PROJECT_DIR$/../" />
+      <go_parameters value="-i" />
+      <kind value="DIRECTORY" />
+      <filePath value="$PROJECT_DIR$/../awesomeProject/crawler.go" />
+      <directory value="$PROJECT_DIR$/../awesomeProject" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go test pagepool" type="GoTestRunConfiguration" factoryName="Go Test" nameIsGenerated="true">
+      <module name="pagepool" />
+      <working_directory value="$PROJECT_DIR$/" />
+      <go_parameters value="-i -v" />
+      <framework value="gotest" />
+      <kind value="DIRECTORY" />
+      <directory value="$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Go Build.go build main.go" />
+      <item itemvalue="Go Test.go test pagepool" />
+    </list>
+  </component>
+  <component name="ServiceViewManager">
+    <option name="viewStates">
+      <list>
+        <serviceView>
+          <treeState>
+            <expand />
+            <select />
+          </treeState>
+        </serviceView>
+      </list>
+    </option>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="da39451a-cf05-4778-841e-69c634710766" name="Default Changelist" comment="" />
+      <created>1576313397490</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1576313397490</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="414" y="174" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1576340495963">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="414" y="174" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1920.1040/-1600.174.1600.860@0.0.1920.1040" timestamp="1576340495963" />
+    <state x="679" y="161" key="#go_build_main.go" timestamp="1576506995455">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="679" y="161" key="#go_build_main.go/0.0.1920.1040/-1600.174.1600.860@0.0.1920.1040" timestamp="1576506995455" />
+    <state x="740" y="274" key="FileChooserDialogImpl" timestamp="1576340494112">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="740" y="274" key="FileChooserDialogImpl/0.0.1920.1040/-1600.174.1600.860@0.0.1920.1040" timestamp="1576340494112" />
+    <state x="781" y="432" width="382" height="175" key="Github.CreateGistDialog" timestamp="1576514716924">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="781" y="432" width="382" height="175" key="Github.CreateGistDialog/0.0.1920.1040/-1600.174.1600.860@0.0.1920.1040" timestamp="1576514716924" />
+    <state width="1877" height="205" key="GridCell.Tab.0.bottom" timestamp="1576514766390">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state width="1877" height="205" key="GridCell.Tab.0.bottom/0.0.1920.1040/-1600.174.1600.860@0.0.1920.1040" timestamp="1576514766390" />
+    <state width="1877" height="205" key="GridCell.Tab.0.center" timestamp="1576514766390">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state width="1877" height="205" key="GridCell.Tab.0.center/0.0.1920.1040/-1600.174.1600.860@0.0.1920.1040" timestamp="1576514766390" />
+    <state width="1877" height="205" key="GridCell.Tab.0.left" timestamp="1576514766390">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state width="1877" height="205" key="GridCell.Tab.0.left/0.0.1920.1040/-1600.174.1600.860@0.0.1920.1040" timestamp="1576514766390" />
+    <state width="1877" height="205" key="GridCell.Tab.0.right" timestamp="1576514766390">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state width="1877" height="205" key="GridCell.Tab.0.right/0.0.1920.1040/-1600.174.1600.860@0.0.1920.1040" timestamp="1576514766390" />
+    <state x="461" y="161" key="SettingsEditor" timestamp="1576506510993">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="461" y="161" key="SettingsEditor/0.0.1920.1040/-1600.174.1600.860@0.0.1920.1040" timestamp="1576506510993" />
+  </component>
+</project>
