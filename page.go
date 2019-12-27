@@ -11,92 +11,139 @@ import (
 
 var client *http.Client
 
-type DocCallBack func(*goquery.Document) interface{}
+type (
+	Doc            = *goquery.Document
+	Urls           []string
+	PageOutput     = []PageTaskOutput
+	PageTaskOutput = [][]string
+	PageTask       func(Doc) [][]string
+)
 
-type Pages struct {
-	Urls []string
-}
+/*
+Output:
+{
+	"http://url1": []PageOutput{
+		[]PageTaskOutput{
+			[]string{
+				"value1-1", // sub-task 1
+				"value1-2", // sub-task 2
+				...
+			}, // Selector child 1
+			[]string{
+				"value2-1", // sub-task 1
+				"value2-2", // sub-task 2
+				...
+			}, // Selector child 2
+			...
+		}, // task 1
+		... // task 2
+	},
+	"http://url2": ...
+	...
+{
+ */
 
 type Job struct {
-	Set       *Pages
-	CallBack  DocCallBack
-	OutFormat int
-	Work      func(string) interface{}
-	Out       struct {
-		Slice          []string
-		IntSlice       []int
-		CustomSlice    []interface{}
-		Map            map[string]string
-		IntMap         map[string]int
-		CustomMap      map[string]interface{}
-		MapSlice       map[string][]string
-		IntMapSlice    map[string][]int
-		CustomMapSlice map[string][]interface{}
-	}
+	Set        []string
+	Tasks      []PageTask
+	Output     map[string]PageOutput
+	WorkerFunc func(string, *Job) error
 }
 
-func On(urls []string) *Pages {
-	s := new(Pages)
-	s.Urls = urls
+func On(urls []string) *Urls {
+	s := new(Urls)
+	*s = append(*s, urls...)
 	return s
 }
 
-func OnRange(format string, begin, end int) *Pages {
-	s := new(Pages)
+func OnRange(format string, begin, end int) *Urls {
+	s := new(Urls)
 	for i := begin; i <= end; i++ {
-		s.Urls = append(s.Urls, fmt.Sprintf(format, i))
+		*s = append(*s, fmt.Sprintf(format, i))
 	}
 	return s
 }
 
-func (j *Job) setCallback() {
-	j.Work = func(url string) interface{} {
+func (s *Urls) AddTask(f PageTask) *Job {
+	j := new(Job)
+	j.Set = *s
+	j.Output = make(map[string]PageOutput)
+	j.WorkerFunc = func(url string, j *Job) error {
 		doc, err := GetPageBody(url)
 		if err != nil {
 			return err
 		}
-		if j.CallBack != nil {
-			return j.CallBack(doc)
+		var out []PageTaskOutput
+		for _, taskFunc := range j.Tasks {
+			v := taskFunc(doc)
+			if v != nil {
+				out = append(out, v)
+			}
 		}
-		return doc
-	}
-}
-
-func (s *Pages) Do(f DocCallBack) *Job {
-	j := new(Job)
-	j.OutFormat = StringOut
-	j.Set = s
-	j.CallBack = f
-	j.setCallback()
-	return j
-}
-
-func (j *Job) SetOutput(out interface{}) *Job {
-	switch out.(type) {
-	case []int:
-		j.OutFormat = IntOut
-		j.Out.IntSlice = out.([]int)
-	case []string:
-		j.OutFormat = StringOut
-		j.Out.Slice = out.([]string)
-	case map[string]int:
-		j.OutFormat = IntMapOut
-		j.Out.IntMap = out.(map[string]int)
-	case map[string]string:
-		j.OutFormat = StringMapOut
-		j.Out.Map = out.(map[string]string)
-	case []interface{}:
-		j.OutFormat = InterfaceOut
-		j.Out.CustomSlice = out.([]interface{})
-	case map[string]interface{}:
-		j.OutFormat = InterfaceMapOut
-		j.Out.CustomMap = out.(map[string]interface{})
-	case nil:
-		break
-	default:
+		j.Output[url] = out
 		return nil
 	}
+	return j.AddTask(f)
+}
+
+func (j *Job) AddTask(f PageTask) *Job {
+	j.Tasks = append(j.Tasks, f)
 	return j
+}
+
+func (s *Urls) Text() *Job {
+	j := new(Job)
+	j.Set = *s
+	j.Output = make(map[string]PageOutput)
+	j.WorkerFunc = func(url string, j *Job) error {
+		doc, err := GetPageBody(url)
+		if err != nil {
+			return err
+		}
+		var out []PageTaskOutput
+		for _, taskFunc := range j.Tasks {
+			v := taskFunc(doc)
+			if v != nil {
+				out = append(out, v)
+			}
+		}
+		j.Output[url] = out
+		return nil
+	}
+	return j.Text()
+}
+
+func (j *Job) Text() *Job {
+	j.Tasks = append(j.Tasks,
+		func(doc Doc) [][]string{
+			return [][]string{{doc.Text()}}
+		})
+	return j
+}
+
+func (w *Worker) ListAll() (out [][]string) {
+	for _, v := range w.Wait().Job.Output {
+		// PageTaskOutput
+		for _, vv := range v {
+			out = append(out, vv...)
+		}
+	}
+	return
+}
+
+func (w *Worker) List(i int) (out []string) {
+	for _, v := range w.Wait().Job.Output {
+		// PageTaskOutput
+		for _, vv := range v {
+			for _, vvv := range vv {
+				if i >= len(vvv) {
+					continue
+				}
+				out = append(out, vvv[i])
+			}
+		}
+	}
+	return
 }
 
 func init() {
