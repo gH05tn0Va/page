@@ -15,15 +15,17 @@ type (
 
 	PagingJob struct {
 		BaseJob
-		Tasks  []PagingTask
-		Tags   map[string]string
-		Output PagingOutput
+		Tasks     []PagingTask
+		Tags      map[string]string
+		TaskAlias map[string]int
+		Output    PagingOutput
 	}
 
-	Doc           = *goquery.Document
-	OutputWithTag = []string
-	PagingOutput  map[string][]OutputWithTag
-	PagingTask    func(Doc) []OutputWithTag
+	Doc               = *goquery.Document
+	OutputWithTag     []string
+	OutputListWithTag []OutputWithTag
+	PagingOutput      map[string]OutputListWithTag
+	PagingTask        func(Doc) []OutputWithTag
 )
 
 /*
@@ -118,8 +120,9 @@ func WorkerFunc(url string, j Job, lock *sync.Mutex) error {
 
 func New() *PagingJob {
 	pj := new(PagingJob)
-	pj.Output = make(map[string][]OutputWithTag)
+	pj.Output = make(map[string]OutputListWithTag)
 	pj.Tags = make(map[string]string)
+	pj.TaskAlias = make(map[string]int)
 	pj.WorkerFunc = WorkerFunc
 	return pj
 }
@@ -178,6 +181,13 @@ func (pj *PagingJob) Run() *Worker {
 	return w.Run()
 }
 
+func (pj *PagingJob) Get(s string) OutputListWithTag {
+	return pj.Run().Out()[s]
+}
+
+func (w *Worker) Get(s string) OutputListWithTag {
+	return w.Out()[s]
+}
 
 func (pj *PagingJob) Out() (out PagingOutput) {
 	return pj.Run().Out()
@@ -187,8 +197,32 @@ func (w *Worker) Out() (out PagingOutput) {
 	return w.Wait().Job.(*PagingJob).Output
 }
 
-func (o PagingOutput) Task(i int) (out map[string][]string) {
-	out = make(map[string][]string)
+func (o PagingOutput) Task(w *Worker, s string) map[string]OutputWithTag {
+	i, ok := w.Job.(*PagingJob).TaskAlias[s]
+	if !ok {
+		return nil
+	}
+	return o.TaskN(i)
+}
+
+func (o OutputWithTag) Task(w *Worker, s string) string {
+	i, ok := w.Job.(*PagingJob).TaskAlias[s]
+	if !ok {
+		return ""
+	}
+	return o.TaskN(i)
+}
+
+func (o OutputListWithTag) Task(w *Worker, s string) []string {
+	i, ok := w.Job.(*PagingJob).TaskAlias[s]
+	if !ok {
+		return nil
+	}
+	return o.TaskN(i)
+}
+
+func (o PagingOutput) TaskN(i int) (out map[string]OutputWithTag) {
+	out = make(map[string]OutputWithTag)
 	for k, v := range o {
 		// var v []OutputWithTag
 		for _, vv := range v {
@@ -198,7 +232,24 @@ func (o PagingOutput) Task(i int) (out map[string][]string) {
 	return
 }
 
-func (o PagingOutput) List() (out []OutputWithTag) {
+func (o OutputWithTag) TaskN(i int) string {
+	if len(o) <= i {
+		return ""
+	}
+	return o[i]
+}
+
+func (o OutputListWithTag) TaskN(i int) (out []string) {
+	for _, v := range o {
+		vv := v.TaskN(i)
+		if vv != "" {
+			out = append(out, vv)
+		}
+	}
+	return
+}
+
+func (o PagingOutput) List() (out OutputListWithTag) {
 	for _, v := range o {
 		// var v []OutputWithTag
 		out = append(out, v...)
@@ -206,7 +257,15 @@ func (o PagingOutput) List() (out []OutputWithTag) {
 	return
 }
 
-func (o PagingOutput) ListTask(i int) (out []string) {
+func (o PagingOutput) ListTask(w *Worker, s string) OutputWithTag {
+	i, ok := w.Job.(*PagingJob).TaskAlias[s]
+	if !ok {
+		return nil
+	}
+	return o.ListTaskN(i)
+}
+
+func (o PagingOutput) ListTaskN(i int) (out OutputWithTag) {
 	for _, v := range o {
 		// var v []OutputWithTag
 		for _, vv := range v {

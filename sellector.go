@@ -87,6 +87,14 @@ func (sj *SelectorJob) AddSelectorTask(f SelTask) *SelectorJob {
 	return sj
 }
 
+func (sj *SelectorJob) Alias(s string) *SelectorJob {
+	if len(sj.CurrentSel.Task) == 0 {
+		return sj
+	}
+	sj.TaskAlias[s] = len(sj.CurrentSel.Task) - 2
+	return sj
+}
+
 func (sj *SelectorJob) AddSubTask(f SubSel) *SelectorJob {
 	sel := sj.CurrentSel
 	tsk := sel.Task[len(sel.Task)-1].SubSel
