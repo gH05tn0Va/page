@@ -1,3 +1,4 @@
+// Base types for goroutine concurrent worker.
 package page
 
 import (
@@ -8,29 +9,22 @@ import (
 
 var DebugWorker = false
 
+type WorkFunc func(string, Job, *sync.Mutex) error
+
 type Worker struct {
-	Job       Job
-	Current   int
-	Lock      sync.Mutex
+	Job
+	Current int
+	Lock    sync.Mutex
 }
 
 type Job interface {
 	Run() *Worker
-	GetWorkFunc() func(string, Job, *sync.Mutex) error
-	GetSet() []string
+	WorkFunc() WorkFunc
+	GetInput() []string
 }
 
 type BaseJob struct {
-	Set        []string
-	WorkerFunc func(string, Job, *sync.Mutex) error
-}
-
-func (j *BaseJob) GetWorkFunc() func(string, Job, *sync.Mutex) error {
-	return j.WorkerFunc
-}
-
-func (j *BaseJob) GetSet() []string {
-	return j.Set
+	Input []string
 }
 
 func (j *BaseJob) Run() *Worker {
@@ -39,15 +33,23 @@ func (j *BaseJob) Run() *Worker {
 	return w.Run()
 }
 
-func (w *Worker) Run() *Worker {
-	for _, s := range w.Job.GetSet() {
+func (j *BaseJob) WorkFunc() WorkFunc {
+	return nil
+}
+
+func (j *BaseJob) GetInput() []string {
+	return j.Input
+}
+
+func Work(w *Worker, set []string) *Worker {
+	for _, s := range set {
 		w.Lock.Lock()
 		w.Current++
 		w.Debug("Added", s)
 		w.Lock.Unlock()
 
 		go func(s string) {
-			err := w.Job.GetWorkFunc()(s, w.Job, &w.Lock)
+			err := w.Job.WorkFunc()(s, w.Job, &w.Lock)
 			if err != nil {
 				w.Warn("Error", err.Error())
 			}
@@ -60,25 +62,12 @@ func (w *Worker) Run() *Worker {
 	return w
 }
 
-func (w *Worker) Add(set []string) *Worker {
-	for _, s := range set {
-		w.Lock.Lock()
-		w.Current++
-		w.Debug("Added", s)
-		w.Lock.Unlock()
+func (w *Worker) Run() *Worker {
+	return Work(w, w.Job.GetInput())
+}
 
-		go func(s string) {
-			err := w.Job.GetWorkFunc()(s, w.Job, &w.Lock)
-			if err != nil {
-				w.Warn("Error", err.Error())
-			}
-			w.Lock.Lock()
-			w.Current--
-			w.Debug("Finished", s)
-			w.Lock.Unlock()
-		}(s)
-	}
-	return w
+func (w *Worker) Add(set []string) *Worker {
+	return Work(w, set)
 }
 
 func (w *Worker) AddOne(s string) *Worker {
@@ -87,7 +76,7 @@ func (w *Worker) AddOne(s string) *Worker {
 
 func (w *Worker) Wait() *Worker {
 	for w.Current > 0 {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 	return w
 }

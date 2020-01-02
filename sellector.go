@@ -1,3 +1,4 @@
+// Functions handling html selections
 package page
 
 import (
@@ -23,22 +24,22 @@ type (
 	SubSel  func(Sel) Sel
 )
 
-func (s *Urls) AddSelector(sel string) *SelectorJob {
+func (s *Urls) Selector(sel string) *SelectorJob {
 	sj := new(SelectorJob)
 	sj.PagingJob = *New()
-	sj.AddRange(s)
-	sj.AddSelector(sel)
+	sj.Add(s)
+	sj.Selector(sel)
 	return sj
 }
 
-func (pj *PagingJob) AddSelector(sel string) *SelectorJob {
+func (pj *PagingJob) Selector(sel string) *SelectorJob {
 	sj := new(SelectorJob)
 	sj.PagingJob = *pj
-	sj.AddSelector(sel)
+	sj.Selector(sel)
 	return sj
 }
 
-func (sj *SelectorJob) AddSelector(sel string) *SelectorJob {
+func (sj *SelectorJob) Selector(sel string) *SelectorJob {
 	sj.CurrentSel = SelectorTask{
 		Name: sel, Task: []struct {
 			SubSel []SubSel
@@ -87,14 +88,6 @@ func (sj *SelectorJob) AddSelectorTask(f SelTask) *SelectorJob {
 	return sj
 }
 
-func (sj *SelectorJob) Alias(s string) *SelectorJob {
-	if len(sj.CurrentSel.Task) == 0 {
-		return sj
-	}
-	sj.TaskAlias[s] = len(sj.CurrentSel.Task) - 2
-	return sj
-}
-
 func (sj *SelectorJob) AddSubTask(f SubSel) *SelectorJob {
 	sel := sj.CurrentSel
 	tsk := sel.Task[len(sel.Task)-1].SubSel
@@ -106,10 +99,38 @@ func (sj *SelectorJob) AddSubTask(f SubSel) *SelectorJob {
 	return sj
 }
 
+func (sj *SelectorJob) First() *SelectorJob {
+	return sj.AddSubTask(
+		func(s Sel) Sel {
+			return s.First()
+		})
+}
+
+func (sj *SelectorJob) Contents() *SelectorJob {
+	return sj.AddSubTask(
+		func(s Sel) Sel {
+			return s.Contents()
+		})
+}
+
 func (sj *SelectorJob) Children() *SelectorJob {
 	return sj.AddSubTask(
 		func(s Sel) Sel {
 			return s.Children()
+		})
+}
+
+func (sj *SelectorJob) Parents() *SelectorJob {
+	return sj.AddSubTask(
+		func(s Sel) Sel {
+			return s.Parents()
+		})
+}
+
+func (sj *SelectorJob) ChildrenFiltered(str string) *SelectorJob {
+	return sj.AddSubTask(
+		func(s Sel) Sel {
+			return s.ChildrenFiltered(str)
 		})
 }
 
@@ -132,5 +153,12 @@ func (sj *SelectorJob) Attr(str string) *SelectorJob {
 		func(s Sel) string {
 			out, _ := s.Attr(str)
 			return out
+		})
+}
+
+func (sj *SelectorJob) AttrOr(str, defaultStr string) *SelectorJob {
+	return sj.AddSelectorTask(
+		func(s Sel) string {
+			return s.AttrOr(str, defaultStr)
 		})
 }

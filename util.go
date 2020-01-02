@@ -1,3 +1,4 @@
+// Helper functions for http requests
 package page
 
 import (
@@ -17,36 +18,32 @@ func init() {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
-	client = &http.Client{Transport: tr}
+	client = &http.Client{
+		Transport: tr,
+		//Timeout:   time.Duration(10 * time.Second),
+	}
 }
 
 func GetPageBody(url string) (Doc, error) {
-	resp, err := client.Get(url)
-	if err != nil {
-		log.Print(err.Error())
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	retry := 3
+	retry := 10
 	retryWait := time.Second
-	for resp.StatusCode != 200 && retry > 0 {
-		if DebugWorker {
-			log.Printf("RETRY [%d/3] GET %s %d",
-				4-retry, url, resp.StatusCode)
-		}
+	resp, err := client.Get(url)
 
-		resp, err = client.Get(url)
-		if err != nil {
-			log.Print(err.Error())
-			return nil, err
-		}
-
+	for (err != nil || resp.StatusCode != 200) && retry > 0 {
 		time.Sleep(retryWait)
+		if DebugWorker {
+			log.Printf("RETRY [%d/3] %s", 4-retry, err.Error())
+		}
+		resp, err = client.Get(url)
+
 		retryWait *= 5
 		retry--
 	}
 
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return nil, errors.New(
 			fmt.Sprintf("Status code: %d", resp.StatusCode))
