@@ -14,14 +14,14 @@ type TagInfoMap map[string]TagInfo
 // Global tags
 var Tags TagInfoMap
 
-func (o OutMap) Tag(tag string) SingleOutMap {
+func Tag(tag string) SingleOutMap {
 	Tags.WaitFor(tag)
-	return o.Select(tag, Tags.GetTask(tag))
+	return Out.Select(tag, Tags.GetTask(tag))
 }
 
-func (o OutMap) PageTag(pageTag string, task int) OutList {
+func PageTag(pageTag string, task int) OutList {
 	Tags.WaitFor(pageTag)
-	return o.List(pageTag, task)
+	return Out.List(pageTag, task)
 }
 
 func (t TagInfoMap) WaitFor(pageTag string) {

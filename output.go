@@ -73,7 +73,6 @@ func (o OutMap) ListAll() OutList {
 }
 
 func (o OutMap) List(pageTag string, task int) OutList {
-	Tags.WaitFor(pageTag)
 	var out OutList
 	for _, url := range Tags.GetUrl(pageTag) {
 		out = append(out, o[url].Task(url, task)...)
@@ -102,7 +101,6 @@ func (o OutMap) FirstOfTask(pageTag string, task int) MultiOut {
 // map[string]OutList -> map[string]SingleOutList
 
 func (o OutMap) Select(tag string, task int) map[string]SingleOutList {
-	Tags.WaitFor(tag)
 	out := make(map[string]SingleOutList)
 	for k, v := range o {
 		// var v OutList
