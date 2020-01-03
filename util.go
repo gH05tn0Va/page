@@ -24,30 +24,37 @@ func init() {
 	}
 }
 
-func GetPageBody(url string) (Doc, error) {
+func getResp(url string) (*http.Response, error) {
+	resp, err := client.Get(url)
+	if err != nil {
+		return resp, err
+	}
+	if resp.StatusCode != 200 {
+		resp.Body.Close()
+		return nil, errors.New(
+			fmt.Sprintf("Status code: %d", resp.StatusCode))
+	}
+	return resp, nil
+}
+
+func getPageBody(url string) (Doc, error) {
 	retry := 10
 	retryWait := time.Second
-	resp, err := client.Get(url)
+	resp, err := getResp(url)
 
-	for (err != nil || resp.StatusCode != 200) && retry > 0 {
+	for (err != nil) && retry > 0 {
 		time.Sleep(retryWait)
-		if DebugWorker {
-			log.Printf("RETRY [%d/3] %s", 4-retry, err.Error())
-		}
-		resp, err = client.Get(url)
+		resp, err = getResp(url)
 
 		retryWait *= 5
 		retry--
 	}
 
 	if err != nil {
+		log.Printf("FAIL %s", err.Error())
 		return nil, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return nil, errors.New(
-			fmt.Sprintf("Status code: %d", resp.StatusCode))
-	}
 
 	// Load the HTML document
 	doc, err := goquery.NewDocumentFromReader(resp.Body)

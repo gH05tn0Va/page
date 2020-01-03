@@ -54,7 +54,7 @@ func (sj *SelectorJob) AddSelectorTask(f SelTask) *SelectorJob {
 	sel.Task[len(sel.Task)-1].Func = f
 
 	// Update the Job.Tasks
-	sj.Tasks[len(sj.Tasks)-1] = func(doc Doc) (res []OutputWithTag) {
+	sj.Tasks[len(sj.Tasks)-1] = func(doc Doc) (res []MultiOut) {
 		doc.Find(sel.Name).Each(func(i int, s Sel) {
 			var selOut []string
 			selSkip := true

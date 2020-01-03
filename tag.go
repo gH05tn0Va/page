@@ -1,35 +1,106 @@
 package page
 
+import "log"
+
 type TagInfo struct {
-	Url   map[string][]string
-	StrId map[string]int
+	Url    []string
+	StrId  int
+	TaskId int
+	Job    *PagingJob
 }
 
+type TagInfoMap map[string]TagInfo
+
 // Global tags
-var Tags *TagInfo
+var Tags TagInfoMap
+
+func (o OutMap) Tag(tag string) SingleOutMap {
+	Tags.WaitFor(tag)
+	return o.Select(tag, Tags.GetTask(tag))
+}
+
+func (o OutMap) PageTag(pageTag string, task int) OutList {
+	Tags.WaitFor(pageTag)
+	return o.List(pageTag, task)
+}
+
+func (t TagInfoMap) WaitFor(pageTag string) {
+	pj := t[pageTag].Job
+	if pj != nil {
+		if pj.Worker == nil {
+			log.Fatalf("Job for '%s' is not started", pageTag)
+		}
+		pj.Worker.Wait()
+	}
+}
+
+func (t TagInfoMap) GetUrl(pageTag string) []string {
+	info, ok := t[pageTag]
+	if ok {
+		return info.Url
+	}
+
+	if DebugWorker {
+		log.Printf("'%s' is not a page tag", pageTag)
+	}
+	return []string{pageTag}
+}
+
+func (t TagInfoMap) GetId(tag string) int {
+	info, ok := t[tag]
+	if ok && info.StrId > 0 {
+		return info.StrId - 1
+	}
+
+	log.Fatalf("'%s' is not an id tag", tag)
+	return -1
+}
+func (t TagInfoMap) GetTask(tag string) int {
+	info, ok := t[tag]
+	if ok && info.TaskId > 0 {
+		return info.TaskId - 1
+	}
+
+	log.Fatalf("'%s' is not an id tag", tag)
+	return -1
+}
+
+func (t TagInfoMap) AddJob(tag string, pj *PagingJob) {
+	info, ok := t[tag]
+	if ok {
+		info.Job = pj
+		t[tag] = info
+	}
+}
 
 func (s Urls) PageTag(pageTag string) Urls {
-	for _, url := range s {
-		Tags.Url[pageTag] = append(Tags.Url[pageTag], url)
+	s.Tag = pageTag
+
+	info, ok := Tags[pageTag]
+	if ok {
+		info.Url = append(info.Url, s.Data...)
+		Tags[pageTag] = info
+	} else {
+		Tags[pageTag] = TagInfo{
+			s.Data, -1, -1,nil}
 	}
 	return s
 }
 
 func (sj *SelectorJob) Tag(tag string) *SelectorJob {
-	Tags.StrId[tag] = len(sj.CurrentSel.Task) - 2
+	_, ok := Tags[tag]
+	if ok {
+		log.Fatalf("'%s' Already exsists!", tag)
+	}
+	Tags[tag] = TagInfo{
+		sj.Input,
+		len(sj.CurrentSel.Task) - 1,
+		len(sj.Tasks),
+		&sj.PagingJob,
+	}
 	return sj
 }
 
 func init() {
-	Tags = new(TagInfo)
-	Tags.Url = make(map[string][]string)
-	Tags.StrId = make(map[string]int)
-	/*
-		Out.IdMap = make(map[string]int)
-		Out.JobMap = make(map[string]*PagingJob)
-		Out.Data = make(map[int]OutputListWithTag)
-		Out.Tag = make(map[string]string)
-		Out.Id = make(map[string]int)
-		Out.TagId = make(map[string][]int)
-	*/
+	Tags = make(TagInfoMap)
 }

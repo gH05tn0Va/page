@@ -50,6 +50,7 @@ func Work(w *Worker, input []string) *Worker {
 		w.Lock.Unlock()
 
 		go func(s string) {
+			// Use global lock?
 			err := w.Job.WorkFunc()(s, w.Job, &w.Lock)
 			if err != nil {
 				w.Warn("Error", err.Error())

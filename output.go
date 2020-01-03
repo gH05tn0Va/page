@@ -4,22 +4,22 @@ package page
 import "log"
 
 /*
-Output PagingOutput{
+OutMap{
 
-	"Tag-1": OutputListWithTag{
+	"Tag-1": OutList{
 
-		OutputWithTag{
+		MultiOut{
 
-			"value1-1", // TaskN 0
-			"value1-2", // TaskN 1
+			"value1-1", // ID 0
+			"value1-2", // ID 1
 			...
 
 		}, // Child 1
 
-		OutputWithTag{
+		MultiOut{
 
-			"value2-1", // TaskN 0
-			"value2-2", // TaskN 1
+			"value2-1", // ID 0
+			"value2-2", // ID 1
 			...
 
 		}, // Child 2
@@ -28,7 +28,7 @@ Output PagingOutput{
 
 	},
 
-	"Tag-2": OutputListWithTag{...},
+	"Tag-2": OutList{...},
 
 	...
 
@@ -36,28 +36,24 @@ Output PagingOutput{
 */
 
 type (
-	OutputWithTag     []string
-	OutputListWithTag []OutputWithTag
-	PagingOutput      map[string]OutputListWithTag
+	MultiOut []string
+	OutList  []MultiOut
+	OutMap   map[string]OutList
+	TaskMap  map[string][]int
 
-	OutputList        []string
-	OutputListMap     map[string]OutputList
+	SingleOutList []string
+	SingleOutMap  map[string]SingleOutList
 )
 
-var Out PagingOutput
-
-func (o PagingOutput) GetByTag(tag string) OutputListMap {
-	return o.SelectBy(tag)
-}
-
-func (o PagingOutput) Page(pageTag string) OutputListWithTag {
-	return o.ListOf(pageTag)
-}
+var (
+	Out   OutMap
+	Tasks TaskMap
+)
 
 // map[string][]string -> []string
 
-func (o OutputListMap) List() OutputList {
-	var out OutputList
+func (o SingleOutMap) List() SingleOutList {
+	var out SingleOutList
 	for _, v := range o {
 		// var v []string
 		out = append(out, v...)
@@ -65,10 +61,10 @@ func (o OutputListMap) List() OutputList {
 	return out
 }
 
-// map[string][]OutputWithTag -> []OutputWithTag
+// map[string][]MultiOut -> []MultiOut
 
-func (o PagingOutput) List() OutputListWithTag {
-	var out OutputListWithTag
+func (o OutMap) ListAll() OutList {
+	var out OutList
 	for _, v := range o {
 		// var v PagingOutputValue
 		out = append(out, v...)
@@ -76,57 +72,77 @@ func (o PagingOutput) List() OutputListWithTag {
 	return out
 }
 
-func (o PagingOutput) ListOf(pageTag string) OutputListWithTag {
-	var out OutputListWithTag
-	for _, url := range Tags.Url[pageTag] {
-		out = append(out, o[url]...)
+func (o OutMap) List(pageTag string, task int) OutList {
+	Tags.WaitFor(pageTag)
+	var out OutList
+	for _, url := range Tags.GetUrl(pageTag) {
+		out = append(out, o[url].Task(url, task)...)
 	}
 	return out
 }
 
-// map[string][]OutputWithTag -> OutputWithTag
+// map[string][]MultiOut -> MultiOut
 
-func (o PagingOutput) FirstOf(pageTag string) OutputWithTag {
-	for _, url := range Tags.Url[pageTag] {
+func (o OutMap) First(pageTag string) MultiOut {
+	Tags.WaitFor(pageTag)
+	for _, url := range Tags.GetUrl(pageTag) {
 		return o[url].First()
 	}
-	log.Printf("No pageTag '%s'", pageTag)
 	return nil
 }
 
-// map[string]OutputListWithTag -> map[string]OutputList
-
-func (o PagingOutput) SelectBy(tag string) map[string]OutputList {
-	i, ok := Tags.StrId[tag]
-	if !ok {
-		return nil
+func (o OutMap) FirstOfTask(pageTag string, task int) MultiOut {
+	Tags.WaitFor(pageTag)
+	for _, url := range Tags.GetUrl(pageTag) {
+		return o[url].Task(url, task).First()
 	}
-	return o.SelectById(i)
+	return nil
 }
 
-func (o PagingOutput) SelectById(selectorId int) map[string]OutputList {
-	out := make(map[string]OutputList)
+// map[string]OutList -> map[string]SingleOutList
+
+func (o OutMap) Select(tag string, task int) map[string]SingleOutList {
+	Tags.WaitFor(tag)
+	out := make(map[string]SingleOutList)
 	for k, v := range o {
-		// var v OutputListWithTag
-		out[k] = v.Get(selectorId)
+		// var v OutList
+		out[k] = v.Task(k, task).Get(tag)
 	}
 	return out
 }
 
-// OutputListWithTag -> OutputList
-
-func (o OutputListWithTag) GetBy(tag string) OutputList {
-	i, ok := Tags.StrId[tag]
-	if !ok {
-		return nil
+func (o OutMap) SelectId(selectorId int) map[string]SingleOutList {
+	out := make(map[string]SingleOutList)
+	for k, v := range o {
+		// var v OutList
+		out[k] = v.GetId(selectorId)
 	}
-	return o.Get(i)
+	return out
 }
 
-func (o OutputListWithTag) Get(selectorId int) OutputList {
-	var out OutputList
+// []MultiOut -> []MultiOut
+
+func (o OutList) Task(url string, task int) OutList {
+	begin := Tasks[url][task]
+	end := Tasks[url][task+1]
+	if len(o) < end {
+		log.Printf("[ERROR] Task %d (begin:%d, end:%d) of %s out of range: %d",
+			task, begin, end, url, len(o))
+		return nil
+	}
+	return o[begin:end]
+}
+
+// OutList -> SingleOutList
+
+func (o OutList) Get(tag string) SingleOutList {
+	return o.GetId(Tags.GetId(tag))
+}
+
+func (o OutList) GetId(selectorId int) SingleOutList {
+	var out SingleOutList
 	for _, v := range o {
-		vv := v.Get(selectorId)
+		vv := v.GetId(selectorId)
 		if vv != "" {
 			out = append(out, vv)
 		}
@@ -134,9 +150,9 @@ func (o OutputListWithTag) Get(selectorId int) OutputList {
 	return out
 }
 
-// []OutputWithTag -> OutputWithTag
+// []MultiOut -> MultiOut
 
-func (o OutputListWithTag) First() OutputWithTag {
+func (o OutList) First() MultiOut {
 	if len(o) > 0 {
 		return o[0]
 	}
@@ -145,27 +161,19 @@ func (o OutputListWithTag) First() OutputWithTag {
 
 // []string -> string
 
-func (o OutputWithTag) GetBy(tag string) string {
-	i, ok := Tags.StrId[tag]
-	if !ok {
-		return ""
-	}
-	return o.Get(i)
+func (o MultiOut) Get(tag string) string {
+	return o.GetId(Tags.GetId(tag))
 }
 
-func (o OutputWithTag) GetByOr(tag string, defaultStr string) string {
-	i, ok := Tags.StrId[tag]
-	if !ok {
-		return defaultStr
-	}
-	return o.GetOr(i, defaultStr)
+func (o MultiOut) GetOr(tag string, defaultStr string) string {
+	return o.GetIdOr(Tags.GetId(tag), defaultStr)
 }
 
-func (o OutputWithTag) Get(selectorId int) string {
-	return o.GetOr(selectorId, "")
+func (o MultiOut) GetId(selectorId int) string {
+	return o.GetIdOr(selectorId, "")
 }
 
-func (o OutputWithTag) GetOr(selectorId int, defaultStr string) string {
+func (o MultiOut) GetIdOr(selectorId int, defaultStr string) string {
 	if len(o) > selectorId {
 		return o[selectorId]
 	}
@@ -174,11 +182,11 @@ func (o OutputWithTag) GetOr(selectorId int, defaultStr string) string {
 
 // []string -> string
 
-func (o OutputList) First() string {
+func (o SingleOutList) First() string {
 	return o.FirstOr("")
 }
 
-func (o OutputList) FirstOr(defaultStr string) string {
+func (o SingleOutList) FirstOr(defaultStr string) string {
 	if len(o) > 0 {
 		return o[0]
 	}
@@ -186,5 +194,6 @@ func (o OutputList) FirstOr(defaultStr string) string {
 }
 
 func init() {
-	Out = make(PagingOutput)
+	Out = make(OutMap)
+	Tasks = make(TaskMap)
 }

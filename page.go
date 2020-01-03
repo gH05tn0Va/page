@@ -8,15 +8,19 @@ import (
 )
 
 type (
+	Urls struct {
+		Data []string
+		Tag  string
+	}
 	PagingJob struct {
 		BaseJob
-		Output  PagingOutput
+		Output  OutMap
+		TaskMap TaskMap
 		Tasks   []PagingTask
 	}
 
-	Urls       []string
 	Doc        = *goquery.Document
-	PagingTask func(Doc) []OutputWithTag
+	PagingTask func(Doc) []MultiOut
 )
 
 func OnOne(url string) Urls {
@@ -24,20 +28,21 @@ func OnOne(url string) Urls {
 }
 
 func OnMany(urls []string) Urls {
-	return urls
+	return Urls{urls, ""}
 }
 
 func OnRange(format string, begin, end, step int) Urls {
 	var s Urls
 	for i := begin; i <= end; i += step {
-		s = append(s, fmt.Sprintf(format, i))
+		s.Data = append(s.Data, fmt.Sprintf(format, i))
 	}
 	return s
 }
 
 func New() *PagingJob {
 	pj := new(PagingJob)
-	pj.Output = Out // Global output
+	pj.Output = Out    // Global output
+	pj.TaskMap = Tasks // Global task map
 	return pj
 }
 
@@ -54,7 +59,7 @@ func (pj *PagingJob) WorkFunc() WorkFunc {
 			log.Fatalf("Expected *page.PagingJob but got %T", j)
 		}
 
-		doc, err := GetPageBody(url)
+		doc, err := getPageBody(url)
 		if err != nil {
 			log.Printf("GET %s ERR %s", url, err.Error())
 			return err
@@ -63,26 +68,36 @@ func (pj *PagingJob) WorkFunc() WorkFunc {
 			log.Printf("GET %s OK", url)
 		}
 
-		for _, taskFunc := range pj.Tasks {
+		for id, taskFunc := range pj.Tasks {
 			v := taskFunc(doc)
+			if DebugWorker {
+				log.Printf("Task %d %s", id, url)
+			}
 			if v != nil {
 				lock.Lock()
-				pj.Output[url] = v
+				pj.TaskMap[url] = append(pj.TaskMap[url],
+					len(pj.Output[url]))
+				pj.Output[url] = append(pj.Output[url], v...)
 				lock.Unlock()
 			}
 		}
+		lock.Lock()
+		pj.TaskMap[url] = append(pj.TaskMap[url],
+			len(pj.Output[url]))
+		lock.Unlock()
 
 		return nil
 	}
 }
 
 func (s Urls) AddToWorker(w *Worker) *Worker {
+	Tags.AddJob(s.Tag, w.Job.(*PagingJob))
 	w.Job.(*PagingJob).Add(s)
-	return w.Add(s)
+	return w.Add(s.Data)
 }
 
 func (pj *PagingJob) Add(s Urls) {
-	pj.Input = append(pj.Input, s...)
+	pj.Input = append(pj.Input, s.Data...)
 }
 
 func (s Urls) AddTask(f PagingTask) *PagingJob {
@@ -104,19 +119,19 @@ func (s Urls) Text() Job {
 
 func (pj *PagingJob) Text() *PagingJob {
 	pj.Tasks = append(pj.Tasks,
-		func(doc Doc) []OutputWithTag {
-			return []OutputWithTag{{doc.Text()}}
+		func(doc Doc) []MultiOut {
+			return []MultiOut{{doc.Text()}}
 		})
 	return pj
 }
 
-func (pj *PagingJob) Out() PagingOutput {
+func (pj *PagingJob) Out() OutMap {
 	if pj.Worker != nil {
 		return pj.Worker.Out()
 	}
 	return pj.Run().Out()
 }
 
-func (w *Worker) Out() PagingOutput {
+func (w *Worker) Out() OutMap {
 	return w.Wait().Job.(*PagingJob).Output
 }
