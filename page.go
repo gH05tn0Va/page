@@ -73,13 +73,13 @@ func (pj *PagingJob) WorkFunc() WorkFunc {
 			if DebugWorker {
 				log.Printf("Task %d %s", id, url)
 			}
+			lock.Lock()
+			pj.TaskMap[url] = append(pj.TaskMap[url],
+				len(pj.Output[url]))
 			if v != nil {
-				lock.Lock()
-				pj.TaskMap[url] = append(pj.TaskMap[url],
-					len(pj.Output[url]))
 				pj.Output[url] = append(pj.Output[url], v...)
-				lock.Unlock()
 			}
+			lock.Unlock()
 		}
 		lock.Lock()
 		pj.TaskMap[url] = append(pj.TaskMap[url],
@@ -133,5 +133,5 @@ func (pj *PagingJob) Out() OutMap {
 }
 
 func (w *Worker) Out() OutMap {
-	return w.Wait().Job.(*PagingJob).Output
+	return w.Job.(*PagingJob).Output
 }

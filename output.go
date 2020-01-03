@@ -1,7 +1,10 @@
 // Functions handling output
 package page
 
-import "log"
+import (
+	"log"
+	"time"
+)
 
 /*
 OutMap{
@@ -82,16 +85,32 @@ func (o OutMap) List(pageTag string, task int) OutList {
 
 // map[string][]MultiOut -> MultiOut
 
+func (o OutMap) WaitFirst(pageTag string) MultiOut {
+	out := o.First(pageTag)
+	for out == nil {
+		out = o.First(pageTag)
+		time.Sleep(50 * time.Millisecond)
+	}
+	return out
+}
+
 func (o OutMap) First(pageTag string) MultiOut {
-	Tags.WaitFor(pageTag)
 	for _, url := range Tags.GetUrl(pageTag) {
 		return o[url].First()
 	}
 	return nil
 }
 
+func (o OutMap) WaitFirstOfTask(pageTag string, task int) MultiOut {
+	out := o.FirstOfTask(pageTag, task)
+	for out == nil {
+		out = o.FirstOfTask(pageTag, task)
+		time.Sleep(50 * time.Millisecond)
+	}
+	return out
+}
+
 func (o OutMap) FirstOfTask(pageTag string, task int) MultiOut {
-	Tags.WaitFor(pageTag)
 	for _, url := range Tags.GetUrl(pageTag) {
 		return o[url].Task(url, task).First()
 	}
@@ -121,6 +140,11 @@ func (o OutMap) SelectId(selectorId int) map[string]SingleOutList {
 // []MultiOut -> []MultiOut
 
 func (o OutList) Task(url string, task int) OutList {
+	if len(Tasks[url]) <= task+1 {
+		log.Printf("[ERROR] Task %d of %s out of range: %v",
+			task, url, Tasks[url])
+		return nil
+	}
 	begin := Tasks[url][task]
 	end := Tasks[url][task+1]
 	if len(o) < end {

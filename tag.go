@@ -25,6 +25,9 @@ func PageTag(pageTag string, task int) OutList {
 }
 
 func (t TagInfoMap) WaitFor(pageTag string) {
+	GlobalLock.Lock()
+	defer GlobalLock.Unlock()
+
 	pj := t[pageTag].Job
 	if pj != nil {
 		if pj.Worker == nil {
@@ -35,6 +38,9 @@ func (t TagInfoMap) WaitFor(pageTag string) {
 }
 
 func (t TagInfoMap) GetUrl(pageTag string) []string {
+	GlobalLock.Lock()
+	defer GlobalLock.Unlock()
+
 	info, ok := t[pageTag]
 	if ok {
 		return info.Url
@@ -47,6 +53,9 @@ func (t TagInfoMap) GetUrl(pageTag string) []string {
 }
 
 func (t TagInfoMap) GetId(tag string) int {
+	GlobalLock.Lock()
+	defer GlobalLock.Unlock()
+
 	info, ok := t[tag]
 	if ok && info.StrId > 0 {
 		return info.StrId - 1
@@ -56,6 +65,9 @@ func (t TagInfoMap) GetId(tag string) int {
 	return -1
 }
 func (t TagInfoMap) GetTask(tag string) int {
+	GlobalLock.Lock()
+	defer GlobalLock.Unlock()
+
 	info, ok := t[tag]
 	if ok && info.TaskId > 0 {
 		return info.TaskId - 1
@@ -66,6 +78,9 @@ func (t TagInfoMap) GetTask(tag string) int {
 }
 
 func (t TagInfoMap) AddJob(tag string, pj *PagingJob) {
+	GlobalLock.Lock()
+	defer GlobalLock.Unlock()
+
 	info, ok := t[tag]
 	if ok {
 		info.Job = pj
@@ -74,6 +89,9 @@ func (t TagInfoMap) AddJob(tag string, pj *PagingJob) {
 }
 
 func (s Urls) PageTag(pageTag string) Urls {
+	GlobalLock.Lock()
+	defer GlobalLock.Unlock()
+
 	s.Tag = pageTag
 
 	info, ok := Tags[pageTag]
@@ -82,12 +100,15 @@ func (s Urls) PageTag(pageTag string) Urls {
 		Tags[pageTag] = info
 	} else {
 		Tags[pageTag] = TagInfo{
-			s.Data, -1, -1,nil}
+			s.Data, -1, -1, nil}
 	}
 	return s
 }
 
 func (sj *SelectorJob) Tag(tag string) *SelectorJob {
+	GlobalLock.Lock()
+	defer GlobalLock.Unlock()
+
 	_, ok := Tags[tag]
 	if ok {
 		log.Fatalf("'%s' Already exsists!", tag)

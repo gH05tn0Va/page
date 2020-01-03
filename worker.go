@@ -7,7 +7,10 @@ import (
 	"time"
 )
 
-var DebugWorker = false
+var (
+	DebugWorker = false
+	GlobalLock  sync.Mutex
+)
 
 type WorkFunc func(string, Job, *sync.Mutex) error
 
