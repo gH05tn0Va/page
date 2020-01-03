@@ -1,6 +1,8 @@
 // Functions handling output
 package page
 
+import "log"
+
 /*
 Output PagingOutput{
 
@@ -33,81 +35,51 @@ Output PagingOutput{
 }
 */
 
-type OutputList []string
+type (
+	OutputWithTag     []string
+	OutputListWithTag []OutputWithTag
+	PagingOutput      map[string]OutputListWithTag
 
-var (
-	IdMap  map[string]int
-	JobMap map[string]*PagingJob
+	OutputList        []string
+	OutputListMap     map[string]OutputList
 )
 
-func (sj *SelectorJob) Tag(tag string) *SelectorJob {
-	IdMap[tag] = len(sj.CurrentSel.Task) - 2
-	JobMap[tag] = &sj.PagingJob
-	return sj
+var Out PagingOutput
+
+func (o PagingOutput) GetByTag(tag string) OutputListMap {
+	return o.SelectBy(tag)
 }
 
-// Global output
-
-func OutputBy(tag string) map[string]OutputList {
-	j, ok := JobMap[tag]
-	if !ok {
-		return nil
-	}
-	return j.Out().MapBy(tag)
+func (o PagingOutput) Page(pageTag string) OutputListWithTag {
+	return o.ListOf(pageTag)
 }
 
-func OutputListBy(tag string) OutputList {
-	j, ok := JobMap[tag]
-	if !ok {
-		return nil
-	}
-	return j.Out().ListBy(tag)
-}
+// map[string][]string -> []string
 
-func OutputFilterBy(pageTag string) OutputListWithTag {
-	j, ok := JobMap[pageTag]
-	if !ok {
-		return nil
-	}
-	return j.Out()[pageTag]
-}
-
-// map[string][]OutputWithTag -> map[string]OutputWithTag
-
-func (o PagingOutput) MapBy(tag string) map[string]OutputList {
-	i, ok := IdMap[tag]
-	if !ok {
-		return nil
-	}
-	return o.Map(i)
-}
-
-func (o PagingOutput) Map(selectorId int) map[string]OutputList {
-	out := make(map[string]OutputList)
-	for k, v := range o {
-		// var v []OutputWithTag
-		for _, vv := range v {
-			out[k] = append(out[k], vv[selectorId])
-		}
+func (o OutputListMap) List() OutputList {
+	var out OutputList
+	for _, v := range o {
+		// var v []string
+		out = append(out, v...)
 	}
 	return out
 }
 
 // map[string][]OutputWithTag -> []OutputWithTag
 
-func (o PagingOutput) ListAll() OutputListWithTag {
+func (o PagingOutput) List() OutputListWithTag {
 	var out OutputListWithTag
 	for _, v := range o {
-		// var v []OutputWithTag
+		// var v PagingOutputValue
 		out = append(out, v...)
 	}
 	return out
 }
 
-func (o PagingOutput) FilterBy(pageTags []string) OutputListWithTag {
+func (o PagingOutput) ListOf(pageTag string) OutputListWithTag {
 	var out OutputListWithTag
-	for _, pageTag := range pageTags {
-		out = append(out, o[pageTag]...)
+	for _, url := range Tags.Url[pageTag] {
+		out = append(out, o[url]...)
 	}
 	return out
 }
@@ -115,24 +87,28 @@ func (o PagingOutput) FilterBy(pageTags []string) OutputListWithTag {
 // map[string][]OutputWithTag -> OutputWithTag
 
 func (o PagingOutput) FirstOf(pageTag string) OutputWithTag {
-	return o[pageTag].First()
+	for _, url := range Tags.Url[pageTag] {
+		return o[url].First()
+	}
+	log.Printf("No pageTag '%s'", pageTag)
+	return nil
 }
 
-// map[string]OutputListWithTag -> OutputList
+// map[string]OutputListWithTag -> map[string]OutputList
 
-func (o PagingOutput) ListBy(tag string) OutputList {
-	i, ok := IdMap[tag]
+func (o PagingOutput) SelectBy(tag string) map[string]OutputList {
+	i, ok := Tags.StrId[tag]
 	if !ok {
 		return nil
 	}
-	return o.List(i)
+	return o.SelectById(i)
 }
 
-func (o PagingOutput) List(selectorId int) OutputList {
-	var out OutputList
-	for _, v := range o {
-		// var v []OutputWithTag
-		out = append(out, v.Get(selectorId)...)
+func (o PagingOutput) SelectById(selectorId int) map[string]OutputList {
+	out := make(map[string]OutputList)
+	for k, v := range o {
+		// var v OutputListWithTag
+		out[k] = v.Get(selectorId)
 	}
 	return out
 }
@@ -140,7 +116,7 @@ func (o PagingOutput) List(selectorId int) OutputList {
 // OutputListWithTag -> OutputList
 
 func (o OutputListWithTag) GetBy(tag string) OutputList {
-	i, ok := IdMap[tag]
+	i, ok := Tags.StrId[tag]
 	if !ok {
 		return nil
 	}
@@ -170,7 +146,7 @@ func (o OutputListWithTag) First() OutputWithTag {
 // []string -> string
 
 func (o OutputWithTag) GetBy(tag string) string {
-	i, ok := IdMap[tag]
+	i, ok := Tags.StrId[tag]
 	if !ok {
 		return ""
 	}
@@ -178,7 +154,7 @@ func (o OutputWithTag) GetBy(tag string) string {
 }
 
 func (o OutputWithTag) GetByOr(tag string, defaultStr string) string {
-	i, ok := IdMap[tag]
+	i, ok := Tags.StrId[tag]
 	if !ok {
 		return defaultStr
 	}
@@ -210,6 +186,5 @@ func (o OutputList) FirstOr(defaultStr string) string {
 }
 
 func init() {
-	IdMap = make(map[string]int)
-	JobMap = make(map[string]*PagingJob)
+	Out = make(PagingOutput)
 }

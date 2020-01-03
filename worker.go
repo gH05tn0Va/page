@@ -24,13 +24,14 @@ type Job interface {
 }
 
 type BaseJob struct {
-	Input []string
+	Worker *Worker
+	Input  []string
 }
 
 func (j *BaseJob) Run() *Worker {
-	w := new(Worker)
-	w.Job = j
-	return w.Run()
+	j.Worker = new(Worker)
+	j.Worker.Job = j
+	return j.Worker.Run()
 }
 
 func (j *BaseJob) WorkFunc() WorkFunc {
@@ -41,8 +42,8 @@ func (j *BaseJob) GetInput() []string {
 	return j.Input
 }
 
-func Work(w *Worker, set []string) *Worker {
-	for _, s := range set {
+func Work(w *Worker, input []string) *Worker {
+	for _, s := range input {
 		w.Lock.Lock()
 		w.Current++
 		w.Debug("Added", s)
@@ -53,6 +54,7 @@ func Work(w *Worker, set []string) *Worker {
 			if err != nil {
 				w.Warn("Error", err.Error())
 			}
+
 			w.Lock.Lock()
 			w.Current--
 			w.Debug("Finished", s)
@@ -66,8 +68,8 @@ func (w *Worker) Run() *Worker {
 	return Work(w, w.Job.GetInput())
 }
 
-func (w *Worker) Add(set []string) *Worker {
-	return Work(w, set)
+func (w *Worker) Add(input []string) *Worker {
+	return Work(w, input)
 }
 
 func (w *Worker) AddOne(s string) *Worker {

@@ -24,7 +24,7 @@ type (
 	SubSel  func(Sel) Sel
 )
 
-func (s *Urls) Selector(sel string) *SelectorJob {
+func (s Urls) Selector(sel string) *SelectorJob {
 	sj := new(SelectorJob)
 	sj.PagingJob = *New()
 	sj.Add(s)
