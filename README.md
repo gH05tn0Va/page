@@ -4,6 +4,8 @@ Web crawler
 
 ## Sample Code
 
+https://play.golang.org/p/8BDugcZY6-_S
+
 ```
 func main() {
 	ctxFinder := page.New().
